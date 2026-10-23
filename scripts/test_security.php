@@ -125,34 +125,34 @@ clearstatcache();
 check('log_suspicious_activity false stops logging', filesize($dataDir . '/security.log') === $before);
 
 $old = time() - 3600;
-foreach (['rate_old', 'blocked_old', 'admin_fail_old'] as $name) {
+foreach (['rate_old', 'blocked_old', 'login_fail_old'] as $name) {
   touch($dataDir . '/' . $name . '.json', $old);
 }
 touch($dataDir . '/rate_fresh.json');
 @unlink($dataDir . '/.last_prune');
 new Security($baseConfig, false, $dataDir);
-check('expired rate/blocked/admin_fail files are pruned', !file_exists($dataDir . '/rate_old.json')
-  && !file_exists($dataDir . '/blocked_old.json') && !file_exists($dataDir . '/admin_fail_old.json'));
+check('expired rate/blocked/login_fail files are pruned', !file_exists($dataDir . '/rate_old.json')
+  && !file_exists($dataDir . '/blocked_old.json') && !file_exists($dataDir . '/login_fail_old.json'));
 check('fresh rate file is kept', file_exists($dataDir . '/rate_fresh.json'));
 removeTree($dataDir);
 
 // ---------------------------------------------------------------------------
-echo "\nAdmin login lockout\n";
+echo "\nLog viewer login lockout\n";
 $dataDir = tempDir('lister-sec-');
 $security = new Security($baseConfig, false, $dataDir);
 request('198.51.100.30', $browser);
-for ($i = 0; $i < Security::ADMIN_MAX_FAILURES - 1; $i++) {
-  $security->recordAdminFailure();
+for ($i = 0; $i < Security::LOGIN_MAX_FAILURES - 1; $i++) {
+  $security->recordLoginFailure();
 }
-check('not locked out below the failure limit', !$security->isAdminLockedOut());
-$security->recordAdminFailure();
-check('locked out at the failure limit', $security->isAdminLockedOut());
+check('not locked out below the failure limit', !$security->isLoginLockedOut());
+$security->recordLoginFailure();
+check('locked out at the failure limit', $security->isLoginLockedOut());
 request('198.51.100.31', $browser);
-check('lockout is per IP', !$security->isAdminLockedOut());
+check('lockout is per IP', !$security->isLoginLockedOut());
 request('198.51.100.30', $browser);
-$security->clearAdminFailures();
-check('successful login clears failures', !$security->isAdminLockedOut());
-check('failed logins are logged', in_array('ADMIN_LOGIN_FAILED', logTypes($dataDir), true));
+$security->clearLoginFailures();
+check('successful login clears failures', !$security->isLoginLockedOut());
+check('failed logins are logged', in_array('LOG_VIEWER_LOGIN_FAILED', logTypes($dataDir), true));
 removeTree($dataDir);
 
 // ---------------------------------------------------------------------------

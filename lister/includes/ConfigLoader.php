@@ -1,6 +1,6 @@
 <?php
 /**
- * Load and validate lister/config/default.json for App, API, and admin.
+ * Load and validate lister/config/default.json for App, API, and the log viewer.
  */
 
 class ConfigLoader

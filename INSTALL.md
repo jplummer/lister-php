@@ -31,7 +31,7 @@ your-domain.com/
 ├── .htaccess       # Apache routing and hardening (production; not router.php)
 └── lister/
     ├── api.php         # AJAX (e.g. folder expand)
-    ├── admin.php       # Security log viewer; off unless security.admin_enabled (see docs/configuration.md)
+    ├── log.php       # Security log viewer; off unless security.log_viewer_enabled (see docs/configuration.md)
     ├── preview.php     # Text/PDF preview helper
     ├── config/         # default.json (required), extensions.json (optional)
     ├── includes/       # PHP classes

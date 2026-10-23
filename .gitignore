@@ -9,8 +9,8 @@
 # Data directory (contains security logs and rate limiting data)
 lister/data/
 
-# Admin password hash (see lister/admin.php)
-lister/config/admin.json
+# Log viewer password hash (see lister/log.php)
+lister/config/log_viewer.json
 
 # Logs
 *.log

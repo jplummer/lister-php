@@ -8,9 +8,9 @@ class Security
 {
   /** Seconds between sweeps of expired per-IP files in lister/data */
   const PRUNE_INTERVAL = 300;
-  /** Failed admin logins allowed per IP within ADMIN_LOCKOUT_WINDOW */
-  const ADMIN_MAX_FAILURES = 5;
-  const ADMIN_LOCKOUT_WINDOW = 900;
+  /** Failed log viewer logins allowed per IP within LOGIN_LOCKOUT_WINDOW */
+  const LOGIN_MAX_FAILURES = 5;
+  const LOGIN_LOCKOUT_WINDOW = 900;
 
   private $dataDir;
   private $config;
@@ -63,11 +63,11 @@ class Security
     @touch($marker);
 
     // Rate files only matter for the last minute; block files until they expire;
-    // admin failure files for the lockout window
+    // login failure files for the lockout window
     $maxAge = [
       'rate_' => 60,
       'blocked_' => $this->blockDuration(),
-      'admin_fail_' => self::ADMIN_LOCKOUT_WINDOW,
+      'login_fail_' => self::LOGIN_LOCKOUT_WINDOW,
     ];
     foreach ($maxAge as $prefix => $age) {
       foreach (glob($this->dataDir . '/' . $prefix . '*.json') ?: [] as $file) {
@@ -319,46 +319,46 @@ class Security
   }
 
   /**
-   * Whether this IP has hit the admin login failure limit.
+   * Whether this IP has hit the log viewer login failure limit.
    */
-  public function isAdminLockedOut()
+  public function isLoginLockedOut()
   {
-    return count($this->recentAdminFailures()) >= self::ADMIN_MAX_FAILURES;
+    return count($this->recentLoginFailures()) >= self::LOGIN_MAX_FAILURES;
   }
 
   /**
-   * Record a failed admin login for this IP and log it.
+   * Record a failed log viewer login for this IP and log it.
    */
-  public function recordAdminFailure()
+  public function recordLoginFailure()
   {
     $ip = $this->getClientIP();
-    $failures = $this->recentAdminFailures();
+    $failures = $this->recentLoginFailures();
     $failures[] = time();
-    file_put_contents($this->adminFailureFile($ip), json_encode(array_values($failures)), LOCK_EX);
-    $this->logSuspiciousActivity($ip, 'ADMIN_LOGIN_FAILED', $_SERVER['HTTP_USER_AGENT'] ?? '');
+    file_put_contents($this->loginFailureFile($ip), json_encode(array_values($failures)), LOCK_EX);
+    $this->logSuspiciousActivity($ip, 'LOG_VIEWER_LOGIN_FAILED', $_SERVER['HTTP_USER_AGENT'] ?? '');
   }
 
-  public function clearAdminFailures()
+  public function clearLoginFailures()
   {
-    @unlink($this->adminFailureFile($this->getClientIP()));
+    @unlink($this->loginFailureFile($this->getClientIP()));
   }
 
-  private function recentAdminFailures()
+  private function recentLoginFailures()
   {
-    $file = $this->adminFailureFile($this->getClientIP());
+    $file = $this->loginFailureFile($this->getClientIP());
     if (!file_exists($file)) {
       return [];
     }
     $data = json_decode((string) file_get_contents($file), true);
-    $cutoff = time() - self::ADMIN_LOCKOUT_WINDOW;
+    $cutoff = time() - self::LOGIN_LOCKOUT_WINDOW;
     return array_filter(is_array($data) ? $data : [], function ($t) use ($cutoff) {
       return $t > $cutoff;
     });
   }
 
-  private function adminFailureFile($ip)
+  private function loginFailureFile($ip)
   {
-    return $this->dataDir . '/admin_fail_' . md5($ip) . '.json';
+    return $this->dataDir . '/login_fail_' . md5($ip) . '.json';
   }
   
   /**

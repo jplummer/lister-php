@@ -1,13 +1,13 @@
 <?php
 /**
  * Security Log - read-only viewer for lister/data/security.log (no settings here)
- * Access: yourdomain.com/lister/admin.php
+ * Access: yourdomain.com/lister/log.php
  *
  * Off by default (returns 404). To turn it on:
- *   1. Set "admin_enabled": true in the "security" block of lister/config/default.json
- *   2. Create lister/config/admin.json containing {"password_hash": "..."}, where the hash is
+ *   1. Set "log_viewer_enabled": true in the "security" block of lister/config/default.json
+ *   2. Create lister/config/log_viewer.json containing {"password_hash": "..."}, where the hash is
  *      the output of: php -r 'echo password_hash("your password", PASSWORD_DEFAULT), "\n";'
- * admin.json is gitignored and blocked from the web. Failed logins are limited per IP.
+ * log_viewer.json is gitignored and blocked from the web. Failed logins are limited per IP.
  */
 
 header('X-Frame-Options: DENY');
@@ -16,9 +16,9 @@ header('X-Robots-Tag: noindex, nofollow');
 header("Content-Security-Policy: default-src 'none'; style-src 'unsafe-inline'; form-action 'self'; frame-ancestors 'none'");
 
 /** Sessions idle longer than this are logged out */
-const ADMIN_IDLE_TIMEOUT = 1800;
+const SESSION_IDLE_TIMEOUT = 1800;
 
-function adminPlainResponse($status, $message)
+function plainResponse($status, $message)
 {
   http_response_code($status);
   header('Content-Type: text/plain; charset=utf-8');
@@ -30,19 +30,19 @@ require_once __DIR__ . '/includes/ConfigLoader.php';
 try {
   $config = ConfigLoader::loadDefaultJson();
 } catch (Exception $e) {
-  adminPlainResponse(500, 'Configuration error.');
+  plainResponse(500, 'Configuration error.');
 }
 
-// Disabled admin looks like no admin
-if (!($config['security']['admin_enabled'] ?? false)) {
-  adminPlainResponse(404, 'Not found');
+// Disabled viewer looks like no viewer
+if (!($config['security']['log_viewer_enabled'] ?? false)) {
+  plainResponse(404, 'Not found');
 }
 
-$adminFile = __DIR__ . '/config/admin.json';
-$adminConfig = is_readable($adminFile) ? json_decode((string) file_get_contents($adminFile), true) : null;
-$passwordHash = is_array($adminConfig) ? (string) ($adminConfig['password_hash'] ?? '') : '';
+$passwordFile = __DIR__ . '/config/log_viewer.json';
+$passwordConfig = is_readable($passwordFile) ? json_decode((string) file_get_contents($passwordFile), true) : null;
+$passwordHash = is_array($passwordConfig) ? (string) ($passwordConfig['password_hash'] ?? '') : '';
 if ($passwordHash === '') {
-  adminPlainResponse(500, 'Admin is enabled but lister/config/admin.json has no password_hash. See the comment at the top of lister/admin.php.');
+  plainResponse(500, 'The log viewer is enabled but lister/config/log_viewer.json has no password_hash. See the comment at the top of lister/log.php.');
 }
 
 require_once __DIR__ . '/includes/Security.php';
@@ -50,7 +50,7 @@ $security = new Security($config);
 
 $secureCookie = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
   || (($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https');
-session_name('lister_admin');
+session_name('lister_log');
 session_set_cookie_params([
   'lifetime' => 0,
   'path' => rtrim(dirname($_SERVER['SCRIPT_NAME']), '/') . '/',
@@ -61,9 +61,9 @@ session_set_cookie_params([
 session_start();
 
 $selfUrl = $_SERVER['SCRIPT_NAME'];
-$loggedIn = !empty($_SESSION['admin']);
+$loggedIn = !empty($_SESSION['logged_in']);
 
-if ($loggedIn && time() - ($_SESSION['last_seen'] ?? 0) > ADMIN_IDLE_TIMEOUT) {
+if ($loggedIn && time() - ($_SESSION['last_seen'] ?? 0) > SESSION_IDLE_TIMEOUT) {
   $_SESSION = [];
   session_destroy();
   $loggedIn = false;
@@ -83,19 +83,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   }
 
   if ($action === 'login') {
-    if ($security->isAdminLockedOut()) {
+    if ($security->isLoginLockedOut()) {
       http_response_code(429);
       $loginError = 'Too many failed attempts. Try again later.';
     } elseif (password_verify((string) ($_POST['password'] ?? ''), $passwordHash)) {
       session_regenerate_id(true);
-      $_SESSION['admin'] = true;
+      $_SESSION['logged_in'] = true;
       $_SESSION['last_seen'] = time();
       $_SESSION['csrf'] = bin2hex(random_bytes(16));
-      $security->clearAdminFailures();
+      $security->clearLoginFailures();
       header('Location: ' . $selfUrl);
       exit;
     } else {
-      $security->recordAdminFailure();
+      $security->recordLoginFailure();
       $loginError = 'Incorrect password.';
     }
   }

@@ -56,7 +56,7 @@ A Node.js build script (`scripts/build.js`) runs at deploy time:
 |---|---|
 | `lister/api.php` | `functions/lister/api.js` — reads `manifest.json`, returns same JSON shape the client already expects |
 | `lister/preview.php` | `functions/lister/preview.js` — fetches file via `fetch()` on same origin, renders markdown with `marked`, returns same JSON shape |
-| `lister/admin.php` | Drop |
+| `lister/log.php` | Drop |
 
 Pages Functions can `fetch()` static assets on the same Pages deployment, so `preview.js` can read text files without a filesystem API.
 
@@ -65,7 +65,7 @@ Pages Functions can `fetch()` static assets on the same Pages deployment, so `pr
 - **`Security.php`** — replaced for free by Cloudflare's network-level WAF and DDoS protection on any Pages deployment
 - **`router.php`** — local dev replaced by `wrangler pages dev`
 - **`.htaccess`** — replaced by `_redirects`: `/* /index.html 200`
-- **`admin.php`** — drop (or move to a Cloudflare Access–protected Worker later)
+- **`log.php`** — drop (or move to a Cloudflare Access–protected Worker later)
 - **`lister/data/`** — security log files; no longer needed
 
 ### What stays unchanged

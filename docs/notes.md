@@ -58,7 +58,7 @@ Repository root (same directory as `index.php`, `router.php`, and `.htaccess`):
 │   │   ├── lister.css     # Stylesheet
 │   │   └── images/        # Favicon JPEGs (flat under images/)
 │   ├── api.php            # AJAX API endpoint
-│   ├── admin.php          # Security log viewer (off by default)
+│   ├── log.php          # Security log viewer (off by default)
 │   ├── preview.php        # Modal text/PDF preview helper
 │   └── data/              # Runtime data (git ignored)
 │       ├── security.log   # Security incidents
@@ -128,7 +128,7 @@ git push origin main
 - Edit `lister/config/default.json` for app settings (loaded via `lister/includes/ConfigLoader.php`)
 - Modify `.htaccess` for Apache rules
 - Update `lister/includes/App.php` for request handling and page rendering
-- Security log viewer at `yourdomain.com/lister/admin.php` is off by default; see `security.admin_enabled` in `docs/configuration.md`
+- Security log viewer at `yourdomain.com/lister/log.php` is off by default; see `security.log_viewer_enabled` in `docs/configuration.md`
 
 ## Common Commands
 
@@ -212,7 +212,7 @@ git pull origin main
 - Verify `lister/config/default.json` is valid JSON
 - Check file paths are correct
 - Ensure all required directories exist
-- Check security configuration in admin panel
+- Check the security log viewer (lister/log.php, if enabled)
 
 ### Debug Mode
 ```bash
@@ -265,7 +265,7 @@ tail -f /opt/homebrew/var/log/php/error.log
 - Rate limiting (`max_requests_per_minute` in config; default 30 per minute)
 - Bot detection (matches curl, wget, and other tool-like user agents when enabled)
 - Suspicious request detection
-- Security logging and admin panel
+- Security logging and a password-protected log viewer
 - Error handling
 
 ## Performance Tips

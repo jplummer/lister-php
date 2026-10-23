@@ -118,7 +118,7 @@ lister/
 - [x] jonplummer patterns, dark mode, responsive
 
 #### 1.5 Security & performance
-- [x] Rate limit, bot UA filter, .htaccess hardening, sanitization, security log + basic admin, suspicious-request logging
+- [x] Rate limit, bot UA filter, .htaccess hardening, sanitization, security log + basic log viewer, suspicious-request logging
 
 #### 1.6 Expandable dirs
 - [x] AJAX expand/collapse, empty folders, nesting, loading indicator
@@ -141,7 +141,7 @@ lister/
 - [x] Loading states, clearer errors, shareable file URLs
 
 #### 2.4 Advanced security
-- [x] Rate limit + IP block + request logging + basic admin dashboard
+- [x] Rate limit + IP block + request logging + basic log viewer
 
 #### 2.5 Polish
 - [x] Directory disclosure caret

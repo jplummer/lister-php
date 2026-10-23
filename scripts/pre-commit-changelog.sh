@@ -42,7 +42,7 @@ if [ -n "$NEW_FILES" ]; then
 fi
 
 # Check for security-related changes
-if echo "$CHANGED_FILES" | grep -qE "(Security\.php|security|admin\.php)"; then
+if echo "$CHANGED_FILES" | grep -qE "(Security\.php|security|log\.php)"; then
   ENTRY_TYPE="Security"
   if [ -z "$ENTRY_TEXT" ]; then
     ENTRY_TEXT="- Update security system"
