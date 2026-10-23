@@ -104,7 +104,7 @@ try {
     $errorType = 'Environment Error';
     $suggestions = [
       'Contact your hosting provider to upgrade PHP version',
-      'PHP 7.4 or higher is required',
+      'PHP 8.3 or higher is required',
       'Check your current PHP version in your hosting control panel'
     ];
   } elseif (strpos($errorMessage, 'function not available') !== false) {

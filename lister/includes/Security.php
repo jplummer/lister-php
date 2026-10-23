@@ -6,6 +6,12 @@
 
 class Security
 {
+  /** Seconds between sweeps of expired per-IP files in lister/data */
+  const PRUNE_INTERVAL = 300;
+  /** Failed admin logins allowed per IP within ADMIN_LOCKOUT_WINDOW */
+  const ADMIN_MAX_FAILURES = 5;
+  const ADMIN_LOCKOUT_WINDOW = 900;
+
   private $dataDir;
   private $config;
   /** When true, denyAccess() returns JSON (for lister/api.php) instead of HTML */
@@ -21,6 +27,58 @@ class Security
     if (!is_dir($this->dataDir)) {
       mkdir($this->dataDir, 0755, true);
     }
+    $this->ensureDataDirDenied();
+    $this->pruneDataFiles();
+  }
+
+  /**
+   * Backstop for the root .htaccess: deny web access to lister/data even if the
+   * root rules are missing or edited. Apache-only; other servers need their own rule.
+   */
+  private function ensureDataDirDenied()
+  {
+    $file = $this->dataDir . '/.htaccess';
+    if (file_exists($file)) {
+      return;
+    }
+    $rules = "<IfModule mod_authz_core.c>\n  Require all denied\n</IfModule>\n"
+      . "<IfModule !mod_authz_core.c>\n  Order Deny,Allow\n  Deny from all\n</IfModule>\n";
+    @file_put_contents($file, $rules);
+  }
+
+  /**
+   * Delete expired per-IP files so lister/data doesn't grow without bound.
+   * Runs at most once per PRUNE_INTERVAL seconds, tracked by a marker file's mtime.
+   */
+  private function pruneDataFiles()
+  {
+    $marker = $this->dataDir . '/.last_prune';
+    $now = time();
+    if (file_exists($marker) && $now - filemtime($marker) < self::PRUNE_INTERVAL) {
+      return;
+    }
+    @touch($marker);
+
+    // Rate files only matter for the last minute; block files until they expire;
+    // admin failure files for the lockout window
+    $maxAge = [
+      'rate_' => 60,
+      'blocked_' => $this->blockDuration(),
+      'admin_fail_' => self::ADMIN_LOCKOUT_WINDOW,
+    ];
+    foreach ($maxAge as $prefix => $age) {
+      foreach (glob($this->dataDir . '/' . $prefix . '*.json') ?: [] as $file) {
+        $mtime = @filemtime($file);
+        if ($mtime !== false && $now - $mtime > $age) {
+          @unlink($file);
+        }
+      }
+    }
+  }
+
+  private function blockDuration()
+  {
+    return (int) ($this->config['security']['block_duration_seconds'] ?? 300);
   }
   
   /**
@@ -46,7 +104,7 @@ class Security
     // Check rate limiting
     if (!$this->checkRateLimit($ip)) {
       $this->logSuspiciousActivity($ip, 'RATE_LIMIT_EXCEEDED', $userAgent);
-      $this->blockIP($ip, 300); // Block for 5 minutes
+      $this->blockIP($ip, $this->blockDuration());
       $this->denyAccess('Rate limit exceeded');
     }
     
@@ -60,7 +118,7 @@ class Security
   /**
    * Get client IP address
    */
-  private function getClientIP()
+  public function getClientIP()
   {
     $ipKeys = ['HTTP_CF_CONNECTING_IP', 'HTTP_X_FORWARDED_FOR', 'HTTP_X_REAL_IP', 'REMOTE_ADDR'];
     
@@ -122,7 +180,10 @@ class Security
     $windowStart = $now - 60; // 1 minute window
     
     if (file_exists($file)) {
-      $data = json_decode(file_get_contents($file), true);
+      $data = json_decode((string) file_get_contents($file), true);
+      if (!is_array($data)) {
+        $data = [];
+      }
       // Clean old entries
       $data = array_filter($data, function($timestamp) use ($windowStart) {
         return $timestamp > $windowStart;
@@ -215,6 +276,10 @@ class Security
    */
   private function logSuspiciousActivity($ip, $type, $userAgent)
   {
+    if (!($this->config['security']['log_suspicious_activity'] ?? true)) {
+      return;
+    }
+
     $logEntry = [
       'timestamp' => date('Y-m-d H:i:s'),
       'ip' => $ip,
@@ -225,7 +290,58 @@ class Security
     ];
     
     $logFile = $this->dataDir . '/security.log';
+
+    // Rotate at max_log_bytes: keep one previous file, so disk use stays under 2x the cap
+    $maxBytes = (int) ($this->config['security']['max_log_bytes'] ?? 1048576);
+    clearstatcache(true, $logFile);
+    if ($maxBytes > 0 && file_exists($logFile) && filesize($logFile) >= $maxBytes) {
+      @rename($logFile, $logFile . '.1');
+    }
+
     file_put_contents($logFile, json_encode($logEntry) . "\n", FILE_APPEND | LOCK_EX);
+  }
+
+  /**
+   * Whether this IP has hit the admin login failure limit.
+   */
+  public function isAdminLockedOut()
+  {
+    return count($this->recentAdminFailures()) >= self::ADMIN_MAX_FAILURES;
+  }
+
+  /**
+   * Record a failed admin login for this IP and log it.
+   */
+  public function recordAdminFailure()
+  {
+    $ip = $this->getClientIP();
+    $failures = $this->recentAdminFailures();
+    $failures[] = time();
+    file_put_contents($this->adminFailureFile($ip), json_encode(array_values($failures)), LOCK_EX);
+    $this->logSuspiciousActivity($ip, 'ADMIN_LOGIN_FAILED', $_SERVER['HTTP_USER_AGENT'] ?? '');
+  }
+
+  public function clearAdminFailures()
+  {
+    @unlink($this->adminFailureFile($this->getClientIP()));
+  }
+
+  private function recentAdminFailures()
+  {
+    $file = $this->adminFailureFile($this->getClientIP());
+    if (!file_exists($file)) {
+      return [];
+    }
+    $data = json_decode((string) file_get_contents($file), true);
+    $cutoff = time() - self::ADMIN_LOCKOUT_WINDOW;
+    return array_filter(is_array($data) ? $data : [], function ($t) use ($cutoff) {
+      return $t > $cutoff;
+    });
+  }
+
+  private function adminFailureFile($ip)
+  {
+    return $this->dataDir . '/admin_fail_' . md5($ip) . '.json';
   }
   
   /**

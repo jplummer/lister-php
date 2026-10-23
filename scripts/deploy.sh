@@ -24,6 +24,7 @@ DEPLOY_DATE=$(date -u +"%Y-%m-%d %H:%M:%S UTC")
 echo "$DEPLOY_ID" > "$REPO_ROOT/lister/.deploy-timestamp"
 
 # Upload files to root directory
+# lister/ is uploaded piece by piece so local lister/data/ (dev logs, per-IP files) never ships
 # Use sshpass if available and password is set, otherwise try SSH key or prompt
 if command -v sshpass >/dev/null 2>&1 && [ -n "$HOST_PASSWORD" ]; then
   # Use sshpass to provide password non-interactively
@@ -31,7 +32,13 @@ if command -v sshpass >/dev/null 2>&1 && [ -n "$HOST_PASSWORD" ]; then
 cd $HOST_REMOTE_PATH
 put index.php
 put .htaccess
-put -r lister/
+-mkdir lister
+put lister/*.php lister/
+put lister/.deploy-timestamp lister/
+put -r lister/assets lister/
+put -r lister/config lister/
+put -r lister/includes lister/
+put -r lister/templates lister/
 quit
 EOF
 else
@@ -49,7 +56,13 @@ else
 cd $HOST_REMOTE_PATH
 put index.php
 put .htaccess
-put -r lister/
+-mkdir lister
+put lister/*.php lister/
+put lister/.deploy-timestamp lister/
+put -r lister/assets lister/
+put -r lister/config lister/
+put -r lister/includes lister/
+put -r lister/templates lister/
 quit
 EOF
 fi

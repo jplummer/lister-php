@@ -128,7 +128,7 @@ git push origin main
 - Edit `lister/config/default.json` for app settings (loaded via `lister/includes/ConfigLoader.php`)
 - Modify `.htaccess` for Apache rules
 - Update `lister/includes/App.php` for request handling and page rendering
-- Access security admin at `yourdomain.com/lister/admin.php`
+- Security admin at `yourdomain.com/lister/admin.php` is off by default; see `security.admin_enabled` in `docs/configuration.md`
 
 ## Common Commands
 

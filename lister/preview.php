@@ -55,6 +55,10 @@ try {
 
   require_once __DIR__ . '/includes/DirectoryLister.php';
   $lister = new DirectoryLister($config, $normalizedBase);
+  // Only preview what the listing would show: never lister/ internals, dotfiles, or hidden patterns
+  if (!$lister->isPathVisible($realFull)) {
+    throw new Exception('File not found');
+  }
   $name = basename($realFull);
   if ($lister->previewKindForFilename($name) !== 'text') {
     throw new Exception('Preview not available for this file type');

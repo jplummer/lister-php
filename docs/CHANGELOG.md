@@ -4,6 +4,16 @@ Notable changes to Lister. Deployment builds show a **compact ID** (last 8 digit
 
 ## Recent changes
 
+### 2026-10-23
+
+- **Security fix**: `lister/data/security.log` was downloadable by anyone because `.htaccess` blocked `/data/` but not `/lister/data/`. `.htaccess` now blocks `lister/{includes,data,config,templates}/`, dotfiles (except `.well-known`), and `*.log`; `Security` also writes a deny-all `.htaccess` into `lister/data/`.
+- **Security fix**: `preview.php` would return the contents of any text-like file under the web root, including `lister/config/*.json` and `.htaccess`; `api.php` and page URLs would list `lister/` and dotfolders. All three now share `DirectoryLister::isPathVisible()`, so anything the listing hides (every path segment checked) gets the same "not found" as a missing file.
+- **Security fix**: `api.php` no longer returns absolute server paths (`path`, `current_path`, `parent_path`).
+- **Admin**: `admin.php` is off by default (`security.admin_enabled`). When on, it checks a `password_hash` in gitignored `lister/config/admin.json`, uses a session (HttpOnly, SameSite=Strict, 30-minute idle timeout), locks an IP out after 5 failed logins in 15 minutes, logs failures, and sends no-frame/no-cache/noindex headers. The hardcoded default password is gone.
+- **Logs and data files**: `security.log` rotates at `security.max_log_bytes` (default 1 MB, one previous file kept). Expired `rate_*`, `blocked_*`, and `admin_fail_*` files are swept every five minutes. `block_duration_seconds` and `log_suspicious_activity` are now honored (they were ignored).
+- **Deploy**: `scripts/deploy.sh` no longer uploads local `lister/data/`.
+- **Requirements**: PHP 8.3 minimum (was 7.4).
+
 ### 2026-03-22
 
 - **Assets**: Favicon JPEGs moved from `lister/assets/images/2021/02/` to `lister/assets/images/`; listing and error templates plus `scripts/diagnose_favicon.php` updated; query string `?v=3` for cache bust.

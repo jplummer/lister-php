@@ -7,7 +7,9 @@
     "enabled": true,
     "max_requests_per_minute": 30,
     "block_duration_seconds": 300,
-    "log_suspicious_activity": true
+    "log_suspicious_activity": true,
+    "max_log_bytes": 1048576,
+    "admin_enabled": false
   },
   "display": {
     "items_per_page": 50,

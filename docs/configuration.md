@@ -16,7 +16,7 @@ HOST_DOMAIN=your-domain.com
 ## Supported Hosting Providers
 
 Lister works with any hosting provider that supports:
-- PHP 8.x
+- PHP 8.3 or newer (Lister refuses to run on older versions)
 - Apache with mod_php
 - SFTP access
 - .htaccess support
@@ -58,11 +58,19 @@ HOST_DOMAIN=your-domain.com
 - Use strong passwords for hosting accounts
 - Consider using SSH keys instead of passwords when possible
 - Regularly update your hosting credentials
+- Keep the domain on a supported PHP branch (check php.net/supported-versions); the host patches PHP itself, not Lister
+- Lister never lists, previews, or serves through its API anything inside `lister/`, dotfiles, or names matching `file_hiding` patterns, even when asked by URL. `.htaccess` also blocks direct requests to `lister/{includes,data,config,templates}/`, dotfiles, and `*.log`, and Lister writes a deny-all `.htaccess` into `lister/data/`
+- Per-IP rate and block files in `lister/data/` are swept every five minutes once expired
+- The client IP for rate limiting comes from `CF-Connecting-IP` / `X-Forwarded-For` when present. Those headers can be forged by anyone who reaches the server directly rather than through your proxy, so the limits are a light guardrail, not a security boundary
 
 ## Lister `config/default.json`
 
   - **`app.debug`** (boolean, default `false`): When **false**, uncaught errors handled by root `index.php` show a **generic message** to visitors and write the real exception (type, message, file, line) to the **PHP `error_log`**. When **true**, the runtime error page shows full **Details** and install-oriented suggestions—use only on trusted local/dev hosts.
   - **`display.readme_preview`** (boolean, default `true`): When a recognized README exists in the directory being listed (e.g. `README.md`, `README.txt`), render it below the file table. Set to `false` to disable. Files larger than 512 KiB are skipped.
+  - **`security.max_log_bytes`** (integer, default `1048576`): When `lister/data/security.log` reaches this size it is renamed to `security.log.1` (replacing any older one), so the log uses at most about twice this much disk. `0` turns rotation off.
+  - **`security.block_duration_seconds`** (integer, default `300`): How long an IP stays blocked after exceeding `max_requests_per_minute`.
+  - **`security.log_suspicious_activity`** (boolean, default `true`): Set to `false` to stop writing `security.log`. Rate limiting and blocking still apply.
+  - **`security.admin_enabled`** (boolean, default `false`): Turns on `lister/admin.php`, the security log viewer. When off, it returns 404. When on, it needs `lister/config/admin.json` with a `password_hash` (instructions at the top of `lister/admin.php`). Five failed logins from one IP lock that IP out for 15 minutes.
   - **`display.preview_text_max_bytes`** (integer, default `524288`): Maximum size for text/code/markdown content loaded into the modal preview via `lister/preview.php`. Larger files show an error in the modal.
 
 ## Server-level 404 vs Lister’s 404

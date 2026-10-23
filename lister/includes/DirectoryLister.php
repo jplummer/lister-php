@@ -63,22 +63,48 @@ class DirectoryLister
 
     $fullPath = $this->basePath . '/' . $path;
 
-    // If the path is a file, get its directory
+    // A file path lists its directory; a directory lists itself
+    $dir = null;
     if (is_file($fullPath)) {
-      $this->requestPathMissing = false;
-      return dirname($fullPath);
+      $dir = dirname($fullPath);
+    } elseif (is_dir($fullPath)) {
+      $dir = $fullPath;
     }
 
-    // If the path is a directory, return it directly
-    if (is_dir($fullPath)) {
+    // Hidden folders (lister/, dotfolders, file_hiding patterns) get the same 404 as missing ones
+    $realDir = $dir !== null ? realpath($dir) : false;
+    if ($realDir !== false && $this->isPathVisible($realDir)) {
       $this->requestPathMissing = false;
-      return $fullPath;
+      return $realDir;
     }
 
-    // Neither file nor directory: 404 (do not silently list site root)
+    // Missing or hidden: 404 (do not silently list site root)
     $this->requestPathMissing = true;
     $this->requestPathMissingLabel = $path;
     return $this->basePath;
+  }
+
+  /**
+   * Whether a real (symlink-resolved) path is inside the listing root and not hidden
+   * by file_hiding rules. Every segment counts, so a hidden folder hides everything
+   * beneath it. All entry points (pages, api.php, preview.php) use this one check.
+   */
+  public function isPathVisible($realPath)
+  {
+    $base = rtrim(str_replace('\\', '/', $this->basePath), '/');
+    $full = rtrim(str_replace('\\', '/', $realPath), '/');
+    if ($full === $base) {
+      return true;
+    }
+    if (strpos($full, $base . '/') !== 0) {
+      return false;
+    }
+    foreach (explode('/', substr($full, strlen($base) + 1)) as $segment) {
+      if ($segment !== '' && $this->shouldHideFile($segment)) {
+        return false;
+      }
+    }
+    return true;
   }
 
   /**

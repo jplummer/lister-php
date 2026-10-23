@@ -85,15 +85,28 @@ try {
     if (!is_dir($realFullPath)) {
         throw new Exception('Directory not found: ' . $requestedPath);
     }
-    
+
     // Create DirectoryLister instance with normalized basePath
     $lister = new DirectoryLister($config, $normalizedBasePath);
+
+    // Hidden folders (lister/, dotfolders, file_hiding patterns) look the same as missing ones
+    if (!$lister->isPathVisible($realFullPath)) {
+        throw new Exception('Directory not found: ' . $requestedPath);
+    }
     $sortPrefs = SortPreference::resolveForApi($config);
     $lister->setSortOverride($sortPrefs['sort_by'], $sortPrefs['sort_dir']);
 
     // Scan the requested directory (use normalized path)
     $result = $lister->scanDirectory($realFullPath);
-    
+
+    // Don't reveal server filesystem paths; the client uses web_path and url
+    unset($result['current_path'], $result['parent_path']);
+    foreach (['directories', 'files'] as $group) {
+        foreach ($result[$group] as $i => $item) {
+            unset($result[$group][$i]['path']);
+        }
+    }
+
     // Return JSON response (tolerate odd filenames that are not valid UTF-8)
     $jsonFlags = JSON_UNESCAPED_SLASHES;
     if (defined('JSON_INVALID_UTF8_SUBSTITUTE')) {

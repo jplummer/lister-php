@@ -7,11 +7,15 @@ RewriteEngine On
 # Basic security - hide sensitive files and directories (must come first)
 
 # Block access to sensitive directories and files
-RewriteCond %{REQUEST_URI} ^/(lister/includes|data|scripts)/ [OR]
+# lister/data holds security logs and per-IP files; lister/config and templates are internal
+RewriteCond %{REQUEST_URI} ^/(lister/(includes|data|config|templates)|data|scripts)(/|$) [NC,OR]
 RewriteCond %{REQUEST_URI} ^/router\.php$ [OR]
 RewriteCond %{REQUEST_URI} ^/test_.*\.php$ [OR]
-RewriteCond %{REQUEST_URI} ^/.*_test\.php$
-RewriteRule ^(.*)$ - [F,L]
+RewriteCond %{REQUEST_URI} ^/.*_test\.php$ [OR]
+RewriteCond %{REQUEST_URI} \.log$ [NC,OR]
+# Dotfiles and dotfolders (.env, .git/, .htaccess), except .well-known
+RewriteCond %{REQUEST_URI} (^|/)\.(?!well-known(/|$))
+RewriteRule ^ - [F,L]
 
 # Redirect root requests to index.php
 RewriteCond %{REQUEST_URI} ^/$

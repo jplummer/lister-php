@@ -84,7 +84,7 @@ See [docs/notes.md](docs/notes.md) for development workflow and troubleshooting.
 
 ## Requirements
 
-- PHP 8.x
+- PHP 8.3 or newer
 - Apache with mod_php
 
 ## Acknowledgments

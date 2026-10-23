@@ -40,8 +40,8 @@ class App
   private function checkEnvironment()
   {
     // Check PHP version
-    if (version_compare(PHP_VERSION, '7.4.0', '<')) {
-      throw new Exception('PHP 7.4 or higher is required. Current version: ' . PHP_VERSION . '. Contact your hosting provider to upgrade PHP.');
+    if (version_compare(PHP_VERSION, '8.3.0', '<')) {
+      throw new Exception('PHP 8.3 or higher is required. Current version: ' . PHP_VERSION . '. Contact your hosting provider to upgrade PHP.');
     }
 
     // Check required functions
