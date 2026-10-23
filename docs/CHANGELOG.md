@@ -17,6 +17,7 @@ Notable changes to Lister. Deployment builds show a **compact ID** (last 8 digit
 - **Rename**: `lister/admin.php` is now `lister/log.php`; config key `security.admin_enabled` is now `security.log_viewer_enabled`; password file `lister/config/admin.json` is now `lister/config/log_viewer.json`. `deploy.sh` removes the old `admin.php` from the server.
 - **404s**: A disabled `log.php` returns the same 404 page, headers, and bot/rate-limit checks as any missing path (shared `App::renderNotFound()`), so it can't be told apart from a file that doesn't exist.
 - **Naming**: `admin.php` is presented as the read-only "Security Log" viewer, not a "Security Admin" dashboard; there are no settings there.
+- **Security fix**: Rate limiting trusted `CF-Connecting-IP` / `X-Forwarded-For` from anyone, so a visitor reaching the server directly could forge a new IP per request and never be limited. Those headers now count only when the request comes from `security.trusted_proxies` (default: Cloudflare's published ranges); otherwise Lister uses the connecting address.
 - **Tests**: `php scripts/test_security.php` now runs real pass/fail checks (rate limit, bot UA, blocking, log rotation, pruning, admin lockout, path visibility) against temp dirs and exits non-zero on failure. `Security::evaluateRequest()` returns the denial instead of exiting, which is what made the old script stop at the first denied request.
 
 ### 2026-03-22

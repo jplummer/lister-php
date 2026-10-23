@@ -9,7 +9,8 @@
     "block_duration_seconds": 300,
     "log_suspicious_activity": true,
     "max_log_bytes": 1048576,
-    "log_viewer_enabled": false
+    "log_viewer_enabled": false,
+    "trusted_proxies": ["cloudflare"]
   },
   "display": {
     "items_per_page": 50,

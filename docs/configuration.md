@@ -61,12 +61,13 @@ HOST_DOMAIN=your-domain.com
 - Keep the domain on a supported PHP branch (check php.net/supported-versions); the host patches PHP itself, not Lister
 - Lister never lists, previews, or serves through its API anything inside `lister/`, dotfiles, or names matching `file_hiding` patterns, even when asked by URL. `.htaccess` also blocks direct requests to `lister/{includes,data,config,templates}/`, dotfiles, and `*.log`, and Lister writes a deny-all `.htaccess` into `lister/data/`
 - Per-IP rate and block files in `lister/data/` are swept every five minutes once expired
-- The client IP for rate limiting comes from `CF-Connecting-IP` / `X-Forwarded-For` when present. Those headers can be forged by anyone who reaches the server directly rather than through your proxy, so the limits are a light guardrail, not a security boundary
+- Rate limiting reads the visitor's IP from `CF-Connecting-IP` / `X-Forwarded-For` only when the request arrives from an address in `security.trusted_proxies` (Cloudflare's ranges by default). Otherwise it uses the connecting address, so a visitor who reaches the server directly can't dodge the limits by forging those headers
 
 ## Lister `config/default.json`
 
   - **`app.debug`** (boolean, default `false`): When **false**, uncaught errors handled by root `index.php` show a **generic message** to visitors and write the real exception (type, message, file, line) to the **PHP `error_log`**. When **true**, the runtime error page shows full **Details** and install-oriented suggestions—use only on trusted local/dev hosts.
   - **`display.readme_preview`** (boolean, default `true`): When a recognized README exists in the directory being listed (e.g. `README.md`, `README.txt`), render it below the file table. Set to `false` to disable. Files larger than 512 KiB are skipped.
+  - **`security.trusted_proxies`** (array, default `["cloudflare"]`): Proxies whose forwarded-IP headers Lister believes. Entries are IPs or CIDR ranges (`"10.0.0.0/8"`); `"cloudflare"` stands for Cloudflare's published edge ranges. Not behind a proxy? The default is still safe, because direct visitors don't come from Cloudflare addresses. Behind a different proxy or load balancer, list its addresses, or every visitor will share the proxy's IP and hit the rate limit together. `[]` trusts no headers.
   - **`security.max_log_bytes`** (integer, default `1048576`): When `lister/data/security.log` reaches this size it is renamed to `security.log.1` (replacing any older one), so the log uses at most about twice this much disk. `0` turns rotation off.
   - **`security.block_duration_seconds`** (integer, default `300`): How long an IP stays blocked after exceeding `max_requests_per_minute`.
   - **`security.log_suspicious_activity`** (boolean, default `true`): Set to `false` to stop writing `security.log`. Rate limiting and blocking still apply.

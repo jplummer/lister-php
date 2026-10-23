@@ -137,22 +137,85 @@ class Security
    */
   public function getClientIP()
   {
-    $ipKeys = ['HTTP_CF_CONNECTING_IP', 'HTTP_X_FORWARDED_FOR', 'HTTP_X_REAL_IP', 'REMOTE_ADDR'];
-    
-    foreach ($ipKeys as $key) {
-      if (!empty($_SERVER[$key])) {
-        $ip = $_SERVER[$key];
-        // Handle comma-separated IPs (from proxies)
-        if (strpos($ip, ',') !== false) {
-          $ip = trim(explode(',', $ip)[0]);
-        }
-        if (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE)) {
-          return $ip;
-        }
+    $remote = $_SERVER['REMOTE_ADDR'] ?? '';
+    // Forwarded headers are only believable when the connection itself comes from a
+    // proxy we trust; anyone reaching the server directly could set them to anything
+    if (!$this->isTrustedProxy($remote)) {
+      return $remote !== '' ? $remote : 'unknown';
+    }
+
+    $cf = trim($_SERVER['HTTP_CF_CONNECTING_IP'] ?? '');
+    if (filter_var($cf, FILTER_VALIDATE_IP)) {
+      return $cf;
+    }
+
+    // X-Forwarded-For grows left to right as it passes through proxies, so the
+    // client is the rightmost entry that isn't one of our own proxies
+    $hops = array_reverse(array_map('trim', explode(',', $_SERVER['HTTP_X_FORWARDED_FOR'] ?? '')));
+    foreach ($hops as $hop) {
+      if (!filter_var($hop, FILTER_VALIDATE_IP)) {
+        break;
+      }
+      if (!$this->isTrustedProxy($hop)) {
+        return $hop;
       }
     }
-    
-    return $_SERVER['REMOTE_ADDR'] ?? 'unknown';
+
+    $real = trim($_SERVER['HTTP_X_REAL_IP'] ?? '');
+    if (filter_var($real, FILTER_VALIDATE_IP)) {
+      return $real;
+    }
+
+    return $remote;
+  }
+
+  /** Cloudflare's published edge ranges (cloudflare.com/ips), checked 2026-10-23 */
+  const CLOUDFLARE_RANGES = [
+    '173.245.48.0/20', '103.21.244.0/22', '103.22.200.0/22', '103.31.4.0/22',
+    '141.101.64.0/18', '108.162.192.0/18', '190.93.240.0/20', '188.114.96.0/20',
+    '197.234.240.0/22', '198.41.128.0/17', '162.158.0.0/15', '104.16.0.0/13',
+    '104.24.0.0/14', '172.64.0.0/13', '131.0.72.0/22',
+    '2400:cb00::/32', '2606:4700::/32', '2803:f800::/32', '2405:b500::/32',
+    '2405:8100::/32', '2a06:98c0::/29', '2c0f:f248::/32',
+  ];
+
+  /**
+   * security.trusted_proxies lists IPs or CIDR ranges; "cloudflare" stands for
+   * CLOUDFLARE_RANGES. An empty list trusts no one and uses REMOTE_ADDR as-is.
+   */
+  private function isTrustedProxy($ip)
+  {
+    $ranges = [];
+    foreach ((array) ($this->config['security']['trusted_proxies'] ?? ['cloudflare']) as $entry) {
+      $ranges = array_merge($ranges, $entry === 'cloudflare' ? self::CLOUDFLARE_RANGES : [$entry]);
+    }
+    foreach ($ranges as $range) {
+      if (self::ipInRange($ip, $range)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  private static function ipInRange($ip, $range)
+  {
+    [$subnet, $bits] = array_pad(explode('/', $range, 2), 2, null);
+    $ipBin = @inet_pton($ip);
+    $subnetBin = @inet_pton($subnet);
+    if ($ipBin === false || $subnetBin === false || strlen($ipBin) !== strlen($subnetBin)) {
+      return false;
+    }
+    $bits = $bits === null ? strlen($ipBin) * 8 : (int) $bits;
+    $bytes = intdiv($bits, 8);
+    if (substr($ipBin, 0, $bytes) !== substr($subnetBin, 0, $bytes)) {
+      return false;
+    }
+    $rem = $bits % 8;
+    if ($rem === 0) {
+      return true;
+    }
+    $mask = (0xFF << (8 - $rem)) & 0xFF;
+    return (ord($ipBin[$bytes]) & $mask) === (ord($subnetBin[$bytes]) & $mask);
   }
   
   /**

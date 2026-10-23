@@ -156,6 +156,40 @@ check('failed logins are logged', in_array('LOG_VIEWER_LOGIN_FAILED', logTypes($
 removeTree($dataDir);
 
 // ---------------------------------------------------------------------------
+echo "\nClient IP and trusted proxies\n";
+$dataDir = tempDir('lister-sec-');
+$security = new Security($baseConfig, false, $dataDir);
+request('198.51.100.40', $browser);
+$_SERVER['HTTP_CF_CONNECTING_IP'] = '203.0.113.7';
+$_SERVER['HTTP_X_FORWARDED_FOR'] = '203.0.113.8';
+check('forwarded headers from a direct visitor are ignored', $security->getClientIP() === '198.51.100.40');
+
+request('162.158.10.20', $browser);
+$_SERVER['HTTP_CF_CONNECTING_IP'] = '203.0.113.7';
+check('CF-Connecting-IP is used when the request comes from Cloudflare', $security->getClientIP() === '203.0.113.7');
+
+request('2606:4700::1', $browser);
+$_SERVER['HTTP_CF_CONNECTING_IP'] = '2001:db8::5';
+check('Cloudflare IPv6 edge is trusted too', $security->getClientIP() === '2001:db8::5');
+
+$config = $baseConfig;
+$config['security']['trusted_proxies'] = ['10.0.0.0/8'];
+$proxied = new Security($config, false, $dataDir);
+request('10.1.2.3', $browser);
+$_SERVER['HTTP_X_FORWARDED_FOR'] = '6.6.6.6, 203.0.113.9, 10.0.0.5';
+check('X-Forwarded-For uses the rightmost hop outside the trusted proxies', $proxied->getClientIP() === '203.0.113.9');
+request('162.158.10.20', $browser);
+$_SERVER['HTTP_CF_CONNECTING_IP'] = '203.0.113.7';
+check('Cloudflare is not trusted once trusted_proxies leaves it out', $proxied->getClientIP() === '162.158.10.20');
+
+$config['security']['trusted_proxies'] = [];
+$noProxy = new Security($config, false, $dataDir);
+request('162.158.10.20', $browser);
+$_SERVER['HTTP_CF_CONNECTING_IP'] = '203.0.113.7';
+check('empty trusted_proxies always uses REMOTE_ADDR', $noProxy->getClientIP() === '162.158.10.20');
+removeTree($dataDir);
+
+// ---------------------------------------------------------------------------
 echo "\nPath visibility\n";
 $root = tempDir('lister-root-');
 foreach (['docs', 'lister/config', 'lister/data', '.git', 'docs/.private'] as $d) {
