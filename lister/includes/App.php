@@ -154,9 +154,24 @@ class App
   }
 
   /**
+   * Send a 404 and render Lister's not-found page. Static so other entry points
+   * (e.g. a disabled log.php) can return the same page as a missing listing path.
+   */
+  public static function renderNotFound($requestPathLabel)
+  {
+    http_response_code(404);
+    $label = ltrim((string) $requestPathLabel, '/');
+    $listerRequestPathDisplay = '/' . $label;
+    $listerPageTitle = 'Page not found — Miscellaneous';
+    $listerMainHeading = 'Page not found';
+    $deploymentTimestamp = self::getDeploymentTimestamp();
+    include __DIR__ . '/../templates/http_error_404.php';
+  }
+
+  /**
    * Get deployment timestamp for verification
    */
-  private function getDeploymentTimestamp()
+  private static function getDeploymentTimestamp()
   {
     // Read from .deploy-timestamp file (created during deployment)
     $timestampFile = __DIR__ . '/../.deploy-timestamp';
@@ -180,12 +195,7 @@ class App
     }
 
     if ($this->error !== null && $this->httpStatus === 404 && $this->lister->isRequestPathMissing()) {
-      $label = $this->lister->getRequestPathMissingLabel();
-      $listerRequestPathDisplay = ($label === '' || $label === '/') ? '/' : '/' . $label;
-      $listerPageTitle = 'Page not found — Miscellaneous';
-      $listerMainHeading = 'Page not found';
-      $deploymentTimestamp = $this->getDeploymentTimestamp();
-      include __DIR__ . '/../templates/http_error_404.php';
+      self::renderNotFound($this->lister->getRequestPathMissingLabel());
       return;
     }
 
@@ -206,7 +216,7 @@ class App
     $error = $this->error;
     $sortBy = $this->sortBy;
     $sortDir = $this->sortDir;
-    $deploymentTimestamp = $this->getDeploymentTimestamp();
+    $deploymentTimestamp = self::getDeploymentTimestamp();
     
     // Make getIconSymbol function available to template
     $getIconSymbol = [$this, 'getIconSymbol'];

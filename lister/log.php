@@ -10,11 +10,6 @@
  * log_viewer.json is gitignored and blocked from the web. Failed logins are limited per IP.
  */
 
-header('X-Frame-Options: DENY');
-header('Cache-Control: no-store');
-header('X-Robots-Tag: noindex, nofollow');
-header("Content-Security-Policy: default-src 'none'; style-src 'unsafe-inline'; form-action 'self'; frame-ancestors 'none'");
-
 /** Sessions idle longer than this are logged out */
 const SESSION_IDLE_TIMEOUT = 1800;
 
@@ -33,10 +28,22 @@ try {
   plainResponse(500, 'Configuration error.');
 }
 
-// Disabled viewer looks like no viewer
+// Disabled viewer looks like no viewer: same 404 page as any missing path
 if (!($config['security']['log_viewer_enabled'] ?? false)) {
-  plainResponse(404, 'Not found');
+  // Bots and rate-limited IPs get the same 403 a missing path would give them
+  if ($config['security']['enabled'] ?? false) {
+    require_once __DIR__ . '/includes/Security.php';
+    (new Security($config))->checkRequest();
+  }
+  require_once __DIR__ . '/includes/App.php';
+  App::renderNotFound(parse_url($_SERVER['REQUEST_URI'] ?? '', PHP_URL_PATH));
+  exit;
 }
+
+header('X-Frame-Options: DENY');
+header('Cache-Control: no-store');
+header('X-Robots-Tag: noindex, nofollow');
+header("Content-Security-Policy: default-src 'none'; style-src 'unsafe-inline'; form-action 'self'; frame-ancestors 'none'");
 
 $passwordFile = __DIR__ . '/config/log_viewer.json';
 $passwordConfig = is_readable($passwordFile) ? json_decode((string) file_get_contents($passwordFile), true) : null;
