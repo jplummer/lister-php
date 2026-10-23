@@ -13,6 +13,7 @@ Notable changes to Lister. Deployment builds show a **compact ID** (last 8 digit
 - **Logs and data files**: `security.log` rotates at `security.max_log_bytes` (default 1 MB, one previous file kept). Expired `rate_*`, `blocked_*`, and `admin_fail_*` files are swept every five minutes. `block_duration_seconds` and `log_suspicious_activity` are now honored (they were ignored).
 - **Deploy**: `scripts/deploy.sh` no longer uploads local `lister/data/`.
 - **Requirements**: PHP 8.3 minimum (was 7.4).
+- **Tests**: `php scripts/test_security.php` now runs real pass/fail checks (rate limit, bot UA, blocking, log rotation, pruning, admin lockout, path visibility) against temp dirs and exits non-zero on failure. `Security::evaluateRequest()` returns the denial instead of exiting, which is what made the old script stop at the first denied request.
 
 ### 2026-03-22
 

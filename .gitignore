@@ -41,7 +41,7 @@ Thumbs.db
 *.backup
 
 # Test files (keep in scripts/ but not in root)
-test_*.php
+/test_*.php
 debug.php
 
 # Security test data

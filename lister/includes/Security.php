@@ -17,11 +17,14 @@ class Security
   /** When true, denyAccess() returns JSON (for lister/api.php) instead of HTML */
   private $denyAsJson;
 
-  public function __construct($config, $denyAsJson = false)
+  /**
+   * @param string|null $dataDir Override for lister/data (tests use a temp dir)
+   */
+  public function __construct($config, $denyAsJson = false, $dataDir = null)
   {
     $this->config = $config;
     $this->denyAsJson = $denyAsJson;
-    $this->dataDir = __DIR__ . '/../data';
+    $this->dataDir = $dataDir ?: __DIR__ . '/../data';
     
     // Create data directory if it doesn't exist
     if (!is_dir($this->dataDir)) {
@@ -82,9 +85,21 @@ class Security
   }
   
   /**
-   * Check if request should be allowed
+   * Check if request should be allowed; sends a 403 and exits if not
    */
   public function checkRequest()
+  {
+    $denial = $this->evaluateRequest();
+    if ($denial !== null) {
+      $this->denyAccess($denial);
+    }
+  }
+
+  /**
+   * Run all checks, log and record as checkRequest() does, but return the denial
+   * message (or null when allowed) instead of exiting. Used by checkRequest() and tests.
+   */
+  public function evaluateRequest()
   {
     $ip = $this->getClientIP();
     $userAgent = $_SERVER['HTTP_USER_AGENT'] ?? '';
@@ -92,20 +107,20 @@ class Security
     // Check if IP is blocked
     if ($this->isBlocked($ip)) {
       $this->logSuspiciousActivity($ip, 'BLOCKED_IP_ACCESS_ATTEMPT', $userAgent);
-      $this->denyAccess('Access denied');
+      return 'Access denied';
     }
     
     // Check for bot behavior
     if ($this->isBot($userAgent)) {
       $this->logSuspiciousActivity($ip, 'BOT_DETECTED', $userAgent);
-      $this->denyAccess('Bot detected');
+      return 'Bot detected';
     }
     
     // Check rate limiting
     if (!$this->checkRateLimit($ip)) {
       $this->logSuspiciousActivity($ip, 'RATE_LIMIT_EXCEEDED', $userAgent);
       $this->blockIP($ip, $this->blockDuration());
-      $this->denyAccess('Rate limit exceeded');
+      return 'Rate limit exceeded';
     }
     
     // Check for suspicious patterns
@@ -113,6 +128,8 @@ class Security
       $this->logSuspiciousActivity($ip, 'SUSPICIOUS_REQUEST', $userAgent);
       // Don't block immediately, just log
     }
+
+    return null;
   }
   
   /**

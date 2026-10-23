@@ -132,6 +132,11 @@ git push origin main
 
 ## Common Commands
 
+### Tests
+```bash
+php scripts/test_security.php   # exits 1 on any failure
+```
+
 ### PHP Development
 ```bash
 # Start development server with router
