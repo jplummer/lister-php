@@ -66,7 +66,13 @@ class DirectoryLister
     // A file path lists its directory; a directory lists itself
     $dir = null;
     if (is_file($fullPath)) {
-      $dir = dirname($fullPath);
+      // A hidden file (e.g. /.htaccess routed here by a server error page) is a 404,
+      // not a listing of its folder. The running entry script (index.php) is exempt.
+      $realFile = realpath($fullPath);
+      $isEntryScript = $realFile !== false && $realFile === realpath($_SERVER['SCRIPT_FILENAME'] ?? '');
+      if ($realFile !== false && ($isEntryScript || $this->isPathVisible($realFile))) {
+        $dir = dirname($fullPath);
+      }
     } elseif (is_dir($fullPath)) {
       $dir = $fullPath;
     }

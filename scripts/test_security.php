@@ -184,6 +184,17 @@ check('page URL for a hidden folder is a 404', $byUrl->isRequestPathMissing());
 $_SERVER['REQUEST_URI'] = '/docs/';
 $byUrl = new DirectoryLister($baseConfig, $root);
 check('page URL for a visible folder is not a 404', !$byUrl->isRequestPathMissing());
+$_SERVER['REQUEST_URI'] = '/.htaccess';
+$byUrl = new DirectoryLister($baseConfig, $root);
+check('page URL for a hidden file is a 404, not its folder', $byUrl->isRequestPathMissing());
+$_SERVER['REQUEST_URI'] = '/docs/notes.md';
+$byUrl = new DirectoryLister($baseConfig, $root);
+check('page URL for a visible file lists its folder', !$byUrl->isRequestPathMissing());
+file_put_contents($root . '/index.php', '<?php');
+$_SERVER['REQUEST_URI'] = '/index.php';
+$_SERVER['SCRIPT_FILENAME'] = $root . '/index.php';
+$byUrl = new DirectoryLister($baseConfig, $root);
+check('page URL for the entry script itself is not a 404', !$byUrl->isRequestPathMissing());
 removeTree($root);
 
 // ---------------------------------------------------------------------------

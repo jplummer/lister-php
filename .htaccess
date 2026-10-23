@@ -15,7 +15,8 @@ RewriteCond %{REQUEST_URI} ^/.*_test\.php$ [OR]
 RewriteCond %{REQUEST_URI} \.log$ [NC,OR]
 # Dotfiles and dotfolders (.env, .git/, .htaccess), except .well-known
 RewriteCond %{REQUEST_URI} (^|/)\.(?!well-known(/|$))
-RewriteRule ^ - [F,L]
+# 404 rather than 403, so blocked paths don't confirm the file exists
+RewriteRule ^ - [R=404,L]
 
 # Redirect root requests to index.php
 RewriteCond %{REQUEST_URI} ^/$

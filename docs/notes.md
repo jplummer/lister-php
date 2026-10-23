@@ -58,7 +58,7 @@ Repository root (same directory as `index.php`, `router.php`, and `.htaccess`):
 │   │   ├── lister.css     # Stylesheet
 │   │   └── images/        # Favicon JPEGs (flat under images/)
 │   ├── api.php            # AJAX API endpoint
-│   ├── admin.php          # Security admin panel
+│   ├── admin.php          # Security log viewer (off by default)
 │   ├── preview.php        # Modal text/PDF preview helper
 │   └── data/              # Runtime data (git ignored)
 │       ├── security.log   # Security incidents
@@ -128,7 +128,7 @@ git push origin main
 - Edit `lister/config/default.json` for app settings (loaded via `lister/includes/ConfigLoader.php`)
 - Modify `.htaccess` for Apache rules
 - Update `lister/includes/App.php` for request handling and page rendering
-- Security admin at `yourdomain.com/lister/admin.php` is off by default; see `security.admin_enabled` in `docs/configuration.md`
+- Security log viewer at `yourdomain.com/lister/admin.php` is off by default; see `security.admin_enabled` in `docs/configuration.md`
 
 ## Common Commands
 

@@ -1,6 +1,6 @@
 <?php
 /**
- * Security Admin - View security logs and statistics
+ * Security Log - read-only viewer for lister/data/security.log (no settings here)
  * Access: yourdomain.com/lister/admin.php
  *
  * Off by default (returns 404). To turn it on:
@@ -109,7 +109,7 @@ if (!$loggedIn) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="robots" content="noindex, nofollow">
-    <title>Security Admin</title>
+    <title>Security Log - Log in</title>
     <style>
       body { font-family: Arial, sans-serif; margin: 40px; max-width: 400px; }
       .form { background: #f8f9fa; padding: 20px; border-radius: 4px; }
@@ -120,13 +120,13 @@ if (!$loggedIn) {
   </head>
   <body>
     <div class="form">
-      <h2>Security Admin</h2>
+      <h2>Security Log</h2>
       <?php if ($loginError !== ''): ?>
         <p class="error" role="alert"><?= htmlspecialchars($loginError) ?></p>
       <?php endif; ?>
       <form method="post" action="<?= htmlspecialchars($selfUrl) ?>">
         <input type="hidden" name="action" value="login">
-        <label for="password">Admin password</label>
+        <label for="password">Password</label>
         <input type="password" id="password" name="password" autocomplete="current-password" required>
         <button type="submit">Log in</button>
       </form>
@@ -146,7 +146,7 @@ $stats = $security->getStats();
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="robots" content="noindex, nofollow">
-  <title>Security Admin - Lister</title>
+  <title>Security Log - Lister</title>
   <style>
     body { font-family: Arial, sans-serif; margin: 20px; }
     .stats { background: #e9ecef; padding: 15px; border-radius: 4px; margin-bottom: 20px; }
@@ -169,7 +169,7 @@ $stats = $security->getStats();
       <button type="submit">Log out</button>
     </form>
   </div>
-  <h1>Security Admin Dashboard</h1>
+  <h1>Security Log</h1>
 
   <div class="stats">
     <h3>Statistics</h3>
@@ -195,7 +195,7 @@ $stats = $security->getStats();
     <?php endforeach; ?>
   <?php endif; ?>
 
-  <h3>Security Configuration</h3>
+  <h3>Current security settings (edit in lister/config/default.json)</h3>
   <pre><?= htmlspecialchars(json_encode($config['security'], JSON_PRETTY_PRINT)) ?></pre>
 
   <p><a href="..">← Back to Directory Listing</a></p>

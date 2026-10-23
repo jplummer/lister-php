@@ -71,8 +71,8 @@ Shipped listing UX (previews, keyboard, a11y, 404, runtime `app.debug`, error do
 ### Authentication and file management
 - [ ] Auth design; SSH key auth; upload UI; DnD upload/rearrange
 
-### Security admin (product-depth)
-- [ ] Richer dashboard: incidents, export, filters, admin auth/session
+### Security log viewer (product-depth)
+- [ ] Richer log viewer: incidents, export, filters (password, session, and login lockout shipped 2026-10-23)
 
 ## Technical Architecture
 

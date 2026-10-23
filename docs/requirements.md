@@ -50,7 +50,7 @@ Not required for the current personal deployment. Revisit if Lister is offered a
   * Drag-and-drop file upload and rearrangement
   * Delete files or folders
   * Authentication via SSH key or user/pass (sshpass)
-* Enhanced security admin dashboard features (beyond the current basic dashboard):
+* Enhanced security log viewer features (beyond the current basic viewer at `lister/admin.php`):
   * **Security concerns to prevent, trap, and/or log:**
     * Bot scraping and automated access (curl, wget, scrapers, crawlers, spiders)
     * Rate limit violations (excessive requests per minute)

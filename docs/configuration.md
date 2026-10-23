@@ -70,7 +70,7 @@ HOST_DOMAIN=your-domain.com
   - **`security.max_log_bytes`** (integer, default `1048576`): When `lister/data/security.log` reaches this size it is renamed to `security.log.1` (replacing any older one), so the log uses at most about twice this much disk. `0` turns rotation off.
   - **`security.block_duration_seconds`** (integer, default `300`): How long an IP stays blocked after exceeding `max_requests_per_minute`.
   - **`security.log_suspicious_activity`** (boolean, default `true`): Set to `false` to stop writing `security.log`. Rate limiting and blocking still apply.
-  - **`security.admin_enabled`** (boolean, default `false`): Turns on `lister/admin.php`, the security log viewer. When off, it returns 404. When on, it needs `lister/config/admin.json` with a `password_hash` (instructions at the top of `lister/admin.php`). Five failed logins from one IP lock that IP out for 15 minutes.
+  - **`security.admin_enabled`** (boolean, default `false`): Turns on `lister/admin.php`, a read-only, password-protected view of the security log (no settings are changed there). When off, it returns 404. When on, it needs `lister/config/admin.json` with a `password_hash` (instructions at the top of `lister/admin.php`). Five failed logins from one IP lock that IP out for 15 minutes.
   - **`display.preview_text_max_bytes`** (integer, default `524288`): Maximum size for text/code/markdown content loaded into the modal preview via `lister/preview.php`. Larger files show an error in the modal.
 
 ## Server-level 404 vs Lister’s 404

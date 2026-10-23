@@ -13,6 +13,8 @@ Notable changes to Lister. Deployment builds show a **compact ID** (last 8 digit
 - **Logs and data files**: `security.log` rotates at `security.max_log_bytes` (default 1 MB, one previous file kept). Expired `rate_*`, `blocked_*`, and `admin_fail_*` files are swept every five minutes. `block_duration_seconds` and `log_suspicious_activity` are now honored (they were ignored).
 - **Deploy**: `scripts/deploy.sh` no longer uploads local `lister/data/`.
 - **Requirements**: PHP 8.3 minimum (was 7.4).
+- **404s**: Blocked paths in `.htaccess` return 404 instead of 403, and a URL naming a hidden file (e.g. `/.htaccess` routed to Lister by a server error page) gets Lister's 404 instead of a listing of its folder.
+- **Naming**: `admin.php` is presented as the read-only "Security Log" viewer, not a "Security Admin" dashboard; there are no settings there.
 - **Tests**: `php scripts/test_security.php` now runs real pass/fail checks (rate limit, bot UA, blocking, log rotation, pruning, admin lockout, path visibility) against temp dirs and exits non-zero on failure. `Security::evaluateRequest()` returns the denial instead of exiting, which is what made the old script stop at the first denied request.
 
 ### 2026-03-22

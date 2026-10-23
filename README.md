@@ -57,7 +57,7 @@ curl -H 'User-Agent: Mozilla/5.0 (local smoke test)' http://localhost:8000/
 ├── .htaccess              # Apache security rules
 ├── lister/                # Application directory
 │   ├── api.php            # AJAX (folder expand)
-│   ├── admin.php          # Optional security admin UI
+│   ├── admin.php          # Optional security log viewer (off by default)
 │   ├── preview.php        # Modal text/PDF preview helper
 │   ├── config/            # default.json, extensions.json
 │   ├── includes/          # PHP classes
